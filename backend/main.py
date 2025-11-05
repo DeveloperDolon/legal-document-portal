@@ -73,6 +73,21 @@ class SearchResponse(BaseModel):
     relevant_docs: List[RelevantDocument]
 
 
+class DocumentInfo(BaseModel):
+    id: str
+    title: str
+    content_length: int
+
+
+class DocsResponse(BaseModel):
+    api_name: str
+    version: str
+    description: str
+    total_documents: int
+    documents: List[DocumentInfo]
+    endpoints: List[dict]
+
+
 def search_documents(query: str) -> SearchResponse:
     """
     Mock search function that finds relevant documents based on query keywords.
@@ -154,6 +169,56 @@ def generate_summary(query: str, relevant_docs: List[RelevantDocument]) -> str:
 async def root():
     """Health check endpoint"""
     return {"status": "ok", "message": "Legal Document Search API is running"}
+
+
+@app.get("/docs", response_model=DocsResponse)
+async def get_docs():
+    """
+    Custom documentation endpoint that provides information about available documents and API endpoints.
+    Note: FastAPI also provides interactive documentation at /docs (Swagger UI) and /redoc (ReDoc)
+    """
+    documents_info = [
+        DocumentInfo(
+            id=doc["id"],
+            title=doc["title"],
+            content_length=len(doc["content"])
+        )
+        for doc in LEGAL_DOCUMENTS
+    ]
+    
+    endpoints = [
+        {
+            "path": "/",
+            "method": "GET",
+            "description": "Health check endpoint"
+        },
+        {
+            "path": "/docs",
+            "method": "GET",
+            "description": "Get API documentation and available legal documents"
+        },
+        {
+            "path": "/generate",
+            "method": "POST",
+            "description": "Search legal documents and generate summary",
+            "request_body": {
+                "query": "string (required)"
+            },
+            "response": {
+                "summary": "string",
+                "relevant_docs": "array of documents with relevance scores"
+            }
+        }
+    ]
+    
+    return DocsResponse(
+        api_name="Legal Document Search API",
+        version="1.0.0",
+        description="API for searching and summarizing legal documents. Contains 3 hardcoded legal documents covering Contract Law, Employment Law, and Intellectual Property Rights.",
+        total_documents=len(LEGAL_DOCUMENTS),
+        documents=documents_info,
+        endpoints=endpoints
+    )
 
 
 @app.post("/generate", response_model=SearchResponse)
