@@ -6,7 +6,6 @@ import uvicorn
 
 app = FastAPI(title="Legal Document Search API")
 
-# Enable CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://localhost:5173", "http://0.0.0.0:3000"],
@@ -15,7 +14,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Hardcoded legal documents
 LEGAL_DOCUMENTS = [
     {
         "id": "doc_001",
@@ -82,8 +80,7 @@ def search_documents(query: str) -> SearchResponse:
     """
     query_lower = query.lower()
     results = []
-    
-    # Simple keyword matching for demonstration
+
     keywords_map = {
         "contract": ["doc_001"],
         "employment": ["doc_002"],
@@ -97,23 +94,18 @@ def search_documents(query: str) -> SearchResponse:
         "ip": ["doc_003"]
     }
     
-    # Find matching documents
     matched_docs = set()
     for keyword, doc_ids in keywords_map.items():
         if keyword in query_lower:
             matched_docs.update(doc_ids)
     
-    # If no matches, return all documents with lower relevance
     if not matched_docs:
         matched_docs = {doc["id"] for doc in LEGAL_DOCUMENTS}
     
-    # Create response with relevant documents
     for doc in LEGAL_DOCUMENTS:
         if doc["id"] in matched_docs:
-            # Calculate simple relevance score based on keyword matches
             score = 0.9 if any(kw in query_lower for kw, ids in keywords_map.items() if doc["id"] in ids) else 0.5
             
-            # Extract first 200 characters as excerpt
             excerpt = doc["content"].strip()[:200] + "..."
             
             results.append(RelevantDocument(
@@ -123,10 +115,8 @@ def search_documents(query: str) -> SearchResponse:
                 relevance_score=score
             ))
     
-    # Sort by relevance score
     results.sort(key=lambda x: x.relevance_score, reverse=True)
     
-    # Generate summary based on query
     summary = generate_summary(query, results)
     
     return SearchResponse(summary=summary, relevant_docs=results)
@@ -141,7 +131,6 @@ def generate_summary(query: str, relevant_docs: List[RelevantDocument]) -> str:
     
     query_lower = query.lower()
     
-    # Generate context-aware summaries
     if "contract" in query_lower:
         return ("Based on the legal documents, a valid contract requires several essential "
                 "elements including offer, acceptance, consideration, capacity, and lawful purpose. "
